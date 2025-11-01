@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>QVolume AI – تحليل فوري</title>
+  <style>
+    body{font-family:'Segoe UI',Tahoma;background:#f5f7fa;color:#333;text-align:center;padding:30px}
+    #result{margin-top:25px;font-size:18px;line-height:32px;background:#fff;padding:20px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);max-width:700px;margin:auto;text-align:right}
+    button{padding:10px 22px;font-size:16px;border:none;border-radius:6px;background:#004e92;color:#fff;cursor:pointer}
+    input[type=file]{margin:15px auto}
+  </style>
+</head>
+<body>
+  <h1>📊 QVolume AI – ارفع شارتك واحصل على التحليل الفوري</h1>
+  <input type="file" id="imgInput" accept="image/*">
+  <button id="analyzeBtn" disabled>حلّل</button>
+  <div id="result"></div>
+
+<script>
+const OPENAI_KEY = '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';
+const imgIn = document.getElementById('imgInput');
+const btn   = document.getElementById('analyzeBtn');
+const res   = document.getElementById('result');
+
+imgIn.onchange = () => btn.disabled = !imgIn.files[0];
+
+btn.onclick = async () => {
+  const file = imgIn.files[0];
+  if (!file) return;
+  res.textContent = '⏳ جاري التحليل...';
+
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = async () => {
+    const base64 = reader.result.split(',')[1];
+
+    const body = {
+      model: 'gpt-4-vision-preview',
+      messages: [
+        {role: 'system', content: 'أنت خبير فوليوم بروفايل، أجب بالعربية فقط بالتنسيق: دخول عند …… وقف الخسارة …… هدفك …… أو انتظر عند …… والشرط ……'},
+        {role: 'user', content: [
+          {type: 'text', text: 'صورة الشارت مع العمود الجانبي الأزرق للفوليوم بروفايل'},
+          {type: 'image_url', image_url: {url: `data:image/jpeg;base64,${base64}`}}
+        ]}
+      ],
+      max_tokens: 150
+    };
+
+    try {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_KEY}`},
+        body: JSON.stringify(body)
+      });
+      const j = await r.json();
+      const ans = j.choices[0].message.content;
+      res.innerHTML = `<strong>📌 التحليل الفوري:</strong><br>${ans}`;
+    } catch (e) {
+      res.textContent = '❌ حدث خطأ، حاول مرة أخرى.';
+    }
+  };
+};
+</script>
+</body>
+</html>
